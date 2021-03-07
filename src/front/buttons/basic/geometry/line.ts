@@ -1,6 +1,12 @@
+import { createSessionStorage } from '../../../SessionStorage/storage'
+import { lineToJSON } from './lineToJSON'
 
 // вспомогательные переменные для реализации создания отрезка
 let bool: boolean = false
+let x1: number
+let y1: number
+let x2: number
+let y2: number
 
 // надуровень для экспорта отвечающий за нажатие по области SVG
 export const createLine = (SVG) => {
@@ -9,11 +15,13 @@ export const createLine = (SVG) => {
 
 // функция реализации логики создания отрезка
 const createLineSVG = (SVG, e) => {
+    // создание объекта geometry в sessionStorage если сессия пустая
+    createSessionStorage()
     // получение границ элемента
     const svgXY = SVG.rbox()
     //аналог e.clientX - svgXY.left - SVG.clientLeft не работает
-    const x1: number = e.clientX - svgXY.x
-    const y1: number = e.clientY - svgXY.y
+    x1 = e.clientX - svgXY.x
+    y1 = e.clientY - svgXY.y
     console.log(` SVG - ${x1} - ${y1}`)
     // обработчик изменения длины отрезка вслед за перемещением мыши
     SVG.on('mousemove', mousemoveLineSVG.bind(null, SVG, bool))
@@ -33,9 +41,12 @@ const mousemoveLineSVG = (SVG, bool, e) => {
 
 const clickEndLineSVG = (SVG, e) => {
     const svgXY = SVG.rbox()
-    const x2: number = e.clientX - svgXY.x
-    const y2: number = e.clientY - svgXY.y
+    x2 = e.clientX - svgXY.x
+    y2 = e.clientY - svgXY.y
     console.log(`Click 2 ${x2} - ${y2}`)
+    // подготовка параметров к записи в sessionStorage
+    let main: Object = lineToJSON(x1, y1, x2, y2)
+    console.log(main)
     // отключение обаботчика clickEndLineSVG
     SVG.off('click')
     // отключение обработчика mousemoveLineSVG

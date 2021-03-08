@@ -1,6 +1,11 @@
+import {
+	geometryObj,
+	geometry
+} from '../StyleConfig/jsonConfig'
+
 /*
  * Вся информация о геометрии хранится в формате JSON
- * {'geometry':
+ * {'geometry': [
  *		{ 'lines': [
  *			{'line_1': [
  *				{'main': [{'x1': 123}, 'y1', 'x2', 'y2', ...]},
@@ -24,18 +29,23 @@
  *				{'relationship': []}
  *			},
  *			...
- *		}]
+ *		}
+ *		]
  *		
  *	}
  */
 
 export const createSessionStorage = () => {
-	if (isSessionStorage() == null) {
-		// создание корневого объекта 
-		sessionStorage.setItem('geometry', JSON.stringify({}))
+	if (!isSessionStorage()) {
+		// создание корневого объекта, создание структуры хранилища JSON
+		sessionStorage.setItem(geometryObj, JSON.stringify(geometry))
 	} 
 }
 
 export const isSessionStorage = () => {
-	return sessionStorage.getItem('geometry')
+	if (sessionStorage.getItem(geometryObj) == null) {
+		return false
+	} else {
+		return true
+	}
 }

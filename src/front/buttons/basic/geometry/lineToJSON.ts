@@ -2,7 +2,7 @@
     colorLine,
     widthLine,
     linecap
-} from '../../../geomentryStyleConfig/geometryStyleConfig'
+} from '../../../StyleConfig/geometryStyleConfig'
 
 export const lineToJSON = (
     x1: number,

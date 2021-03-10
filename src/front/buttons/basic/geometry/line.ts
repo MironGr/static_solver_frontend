@@ -3,12 +3,21 @@ import { IDsvg } from '../../../StyleConfig/elemConfig'
 import {
     colorLine,
     widthLine,
-    linecap
+    linecap,
+    opacity,
+    circleEdgeClass
 } from '../../../StyleConfig/geometryStyleConfig'
-
+import {
+    linesObjName
+} from '../../../StyleConfig/jsonConfig'
 import { lineToJSON } from './lineToJSON'
 import { lineTempView } from './lineTempView'
-import { getLines } from './linesGetFromStorage'
+import {
+    getNextID,
+    getObjectMain
+} from './objGetFromStorage'
+import { setLineToStorage } from './linesSetToStorage'
+import { highlightingElemOver } from './highlightingElements'
 import { Element } from '@svgdotjs/svg.js'
 
 // вспомогательные переменные для реализации создания отрезка
@@ -19,6 +28,7 @@ let y2: number
 let line: Element
 let lineTemp: any
 let SVGtemp: any
+let lineID: number
 
 // надуровень для экспорта отвечающий за нажатие по области SVG
 export const createLine = (SVG) => {
@@ -32,11 +42,9 @@ const createLineSVG = (SVG, e) => {
     console.log(createSessionStorage())
     // получение границ элемента
     const svgXY = SVG.rbox()
-    const svgViewbox = SVG.viewbox()
     // точные координаты начальной точки
     x1 = e.pageX - svgXY.x
     y1 = e.pageY - svgXY.y
-    console.log(`x - ${e.clientX} - ${svgXY.x} - ${e.pageX}`)
     // временная линия для отображения при построении
     lineTemp = lineTempView(x1, y1)
     SVGtemp = document.querySelector(`#${IDsvg}`);
@@ -55,16 +63,24 @@ const createLineSVG = (SVG, e) => {
 
 const mousemoveLineSVG = (SVG, e) => {
     const svgXY = SVG.rbox()
-    console.log(`${e.clientX - svgXY.x} - ${e.clientY - svgXY.y}`)
+    //console.log(`${e.clientX - svgXY.x} - ${e.clientY - svgXY.y}`)
     // назначение атрибутов конца отрезка и стиля временной линии
     lineTemp.setAttributeNS(null, 'x2', (e.pageX - svgXY.x).toString())
     lineTemp.setAttributeNS(null, 'y2', (e.pageY - svgXY.y).toString())
     lineTemp.setAttributeNS(null, 'stroke', colorLine)
     lineTemp.setAttributeNS(null, 'stroke-width', widthLine)
     lineTemp.setAttributeNS(null, 'stroke-linecap', linecap)
-    
+
+    // прерывание команды при нажатии Esc
+    document.addEventListener('keydown', () => {
+        // удаление временной линии
+        lineTemp.remove()
+    })
     // добавление обработчика для создания 2й точки отрезка
     SVG.on('click', clickEndLineSVG.bind(null, SVG))
+
+    // подсветка окружностей
+    highlightingElemOver(circleEdgeClass)
 }
 
 const clickEndLineSVG = (SVG, e) => {
@@ -83,13 +99,33 @@ const clickEndLineSVG = (SVG, e) => {
     SVG.off('mousemove')
     // удаление временной линии
     lineTemp.remove()
-    const x22: number = x2
-    const y22: number = y2
-    // добавление линии из SVG.js
-    line = SVG.line(x1, y1, x2, y2)
+    // запись параметров линии в sessionStorage
+    setLineToStorage(x1, y1, x2, y2)
+    // чтение данных из sessionStorage
+    lineID = getNextID(linesObjName) - 1
+    // объект с данными о линии
+    let currentMain: {} = getObjectMain(linesObjName, lineID)
+    // добавление линии с помощью SVG.js, данные из sessionStorage
+    line = SVG.line(
+        currentMain[0]['x1'],
+        currentMain[1]['y1'],
+        currentMain[2]['x2'],
+        currentMain[3]['y2']
+    )
     line.stroke({ color: colorLine, width: widthLine, linecap: linecap })
+    // добавление id к линии
+    line.id('line_' + lineID.toString())
+    // создание концевых окружностей
+    circleOnEdge(SVG)
 }
 
+// создание концевых окружностей на линии
+const circleOnEdge = (SVG) => {
+    let circleStart = SVG.circle(widthLine).move(x1 - widthLine / 2, y1 - widthLine / 2).attr('class', `${circleEdgeClass}`)
+    let circleEnd = SVG.circle(widthLine).move(x2 - widthLine / 2, y2 - widthLine / 2).attr('class', `${circleEdgeClass}`)
+    circleStart.fill({ color: colorLine })
+    circleEnd.fill({ color: colorLine })
+}
 
 /*
 export class CreateLine {

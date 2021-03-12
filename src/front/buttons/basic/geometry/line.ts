@@ -4,20 +4,24 @@ import {
     colorLine,
     widthLine,
     linecap,
-    opacity,
-    circleEdgeClass
+    circleEdgeClass,
+    elemMouseover
 } from '../../../StyleConfig/geometryStyleConfig'
 import {
     linesObjName
 } from '../../../StyleConfig/jsonConfig'
-import { lineToJSON } from './lineToJSON'
 import { lineTempView } from './lineTempView'
 import {
     getNextID,
     getObjectMain
 } from './objGetFromStorage'
 import { setLineToStorage } from './linesSetToStorage'
-import { highlightingElemOver } from './highlightingElements'
+import {
+    highlightingElemOver,
+    highlightingElemOut,
+    deleteClassFromAll
+} from './highlightingElements'
+//import { getCxCyCircle } from '../../editing/supportForGeometry'
 import { Element } from '@svgdotjs/svg.js'
 
 // вспомогательные переменные для реализации создания отрезка
@@ -29,22 +33,40 @@ let line: Element
 let lineTemp: any
 let SVGtemp: any
 let lineID: number
+let cx: number
+let cy: number
 
 // надуровень для экспорта отвечающий за нажатие по области SVG
 export const createLine = (SVG) => {
     SVG.on('click', createLineSVG.bind(null, SVG))
+    // включение подсветки окружностей
+    highlightingElemOver(circleEdgeClass)
+    // обработка привязки к концевым окружностям
+    getXYfromCircle(circleEdgeClass)
+    console.log('widthLine/10 - ' + widthLine / 10)
 }
 
 // функция реализации логики создания отрезка
 const createLineSVG = (SVG, e) => {
     // создание объекта geometry в sessionStorage если сессия пустая
     createSessionStorage()
-    console.log(createSessionStorage())
+
     // получение границ элемента
     const svgXY = SVG.rbox()
-    // точные координаты начальной точки
-    x1 = e.pageX - svgXY.x
-    y1 = e.pageY - svgXY.y
+
+    // выбор начальных координат линии (возможна привязка)
+    if (cx && cy) {
+        x1 = cx
+        y1 = cy
+        // обнуление перед выбором второй точки отрезка
+        cx = undefined
+        cy = undefined
+    } else {
+        // точные координаты начальной точки
+        x1 = parseInt(e.pageX) - parseInt(svgXY.x)
+        y1 = parseInt(e.pageY) - parseInt(svgXY.y)
+    }    
+    
     // временная линия для отображения при построении
     lineTemp = lineTempView(x1, y1)
     SVGtemp = document.querySelector(`#${IDsvg}`);
@@ -56,44 +78,48 @@ const createLineSVG = (SVG, e) => {
     SVG.on('mousemove', mousemoveLineSVG.bind(null, SVG))
     // отключения обратотчика createLineSVG
     SVG.off('click')  
-    // протестировать добавление линии
-    // придумать хранение нарисованных объектов на фронте (в виде тегов / в сторедж сессии / JSON)
-    // придумать относительное позиционирование линий относительно друг друга
 }
 
 const mousemoveLineSVG = (SVG, e) => {
     const svgXY = SVG.rbox()
-    //console.log(`${e.clientX - svgXY.x} - ${e.clientY - svgXY.y}`)
     // назначение атрибутов конца отрезка и стиля временной линии
     lineTemp.setAttributeNS(null, 'x2', (e.pageX - svgXY.x).toString())
     lineTemp.setAttributeNS(null, 'y2', (e.pageY - svgXY.y).toString())
     lineTemp.setAttributeNS(null, 'stroke', colorLine)
-    lineTemp.setAttributeNS(null, 'stroke-width', widthLine)
+    lineTemp.setAttributeNS(null, 'stroke-width', widthLine/15)
     lineTemp.setAttributeNS(null, 'stroke-linecap', linecap)
 
     // прерывание команды при нажатии Esc
-    document.addEventListener('keydown', () => {
+    document.addEventListener('keydown', (event) => {
         // удаление временной линии
-        lineTemp.remove()
+        if (event.keyCode == 27) { // event.code = event.key = Escape
+            console.log(`Нажата Esc`)
+            lineTemp.remove()
+        }
     })
     // добавление обработчика для создания 2й точки отрезка
     SVG.on('click', clickEndLineSVG.bind(null, SVG))
 
-    // подсветка окружностей
-    highlightingElemOver(circleEdgeClass)
+    
 }
 
 const clickEndLineSVG = (SVG, e) => {
     const svgXY = SVG.rbox()
-    // точные координаты конечной точки
-    x2 = e.pageX - svgXY.x
-    y2 = e.pageY - svgXY.y
-    console.log(`Click 2 ${x2} - ${y2}`)
-    // подготовка параметров к записи в sessionStorage
-    let main: Object = lineToJSON(x1, y1, x2, y2)
-    console.log(main)
-    //console.log(typeof getLines())
-    // отключение обаботчика clickEndLineSVG
+    // выбор конечной точки линии (возможна привязка)
+    if (cx && cy) {
+        x2 = cx
+        y2 = cy
+        cx = undefined
+        cy = undefined
+    } else {
+        // точные координаты конечной точки
+        x2 = parseInt(e.pageX) - parseInt(svgXY.x)
+        y2 = parseInt(e.pageY) - parseInt(svgXY.y)
+    }
+    
+    // для отладки
+    console.log(`Click 2 ${x2} - ${y2} -- 123`)
+
     SVG.off('click')
     // отключение обработчика mousemoveLineSVG
     SVG.off('mousemove')
@@ -117,6 +143,18 @@ const clickEndLineSVG = (SVG, e) => {
     line.id('line_' + lineID.toString())
     // создание концевых окружностей
     circleOnEdge(SVG)
+
+    // отключение подсветки окружностей и удаление всех addEventListener на окружностях
+    highlightingElemOut(circleEdgeClass, SVG)
+
+    // удаление лишних классов 
+    deleteClassFromAll(elemMouseover)
+
+    // обнуление координат концов отрезка
+    x1 = undefined
+    y1 = undefined
+    x2 = undefined
+    y2 = undefined
 }
 
 // создание концевых окружностей на линии
@@ -127,65 +165,18 @@ const circleOnEdge = (SVG) => {
     circleEnd.fill({ color: colorLine })
 }
 
-/*
-export class CreateLine {
+// привязка к окружностям на линии
+const getXYfromCircle = (classElem: string) => {
+    let elemArr: any = document.querySelectorAll('.' + classElem)
 
-    private SVG: SVGElement
-    private svgXY
-    private e: MouseEvent
-
-    constructor(SVGinput) {
-        this.SVG = SVGinput
-    }
-    
-    
-    public getSVG(): object {
-        //return this.SVG
-    }
-    
-    
-    public createLineClass(SVG) {
-        SVG.on('click', this.createLineSVG.bind(SVG, value))
-    }
-    
-
-    public createLineSVG(SVG, e: MouseEvent): void {
-        SVG.on('click', function () {
-            // получение границ элемента
-            this.svgXY = SVG.rbox()
-            this.SVG = SVG
-            //аналог e.clientX - svgXY.left - SVG.clientLeft не работает
-            const x1: number = e.clientX - this.svgXY.x
-            const y1: number = e.clientY - this.svgXY.y
-            let bool: boolean = false
-            //if (!bool) {
-            console.log(`SVG Class! - ${x1} - ${y1}`)
-            //bool = true
-            SVG.on('mousemove', this.mousemoveLineSVG())
-            console.log('!!!!')
-            //SVG.on('mousemove', this.mousemoveLineSVG.bind(null, SVG, bool))
-            //console.log(bool)
-            // } else {
-            //    console.log(`xxx`)
-            //}
-        })
-    }
-
-    public mousemoveLineSVG(e: MouseEvent): void {
-        //const svgXY = SVG.rbox()
-        console.log(`${e.clientX - this.svgXY.x} - ${e.clientY - this.svgXY.y}`)
-        console.log(`${typeof e}`)
-        //if (!bool) {
-        this.SVG.on('click', this.clickEndLineSVG.bind(null, SVG))
-        //}
-    }
-
-    private clickEndLineSVG(SVG, e: MouseEvent): void {
-        const svgXY = SVG.rbox()
-        const x2: number = e.clientX - svgXY.x
-        const y2: number = e.clientY - svgXY.y
-        console.log(`Click 2 ${x2} - ${y2}`)
-        SVG.off('click')
+    for (let i = 0; i < elemArr.length; i++) {
+        let elem = elemArr[i]
+        elem.addEventListener('click', getCxCy.bind(null, elem))
     }
 }
-*/
+
+const getCxCy = (elem: HTMLElement) => {
+    cx = parseInt(elem.getAttribute('cx'))
+    cy = parseInt(elem.getAttribute('cy'))
+}
+

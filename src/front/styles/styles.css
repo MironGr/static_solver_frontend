@@ -5,3 +5,7 @@
 .elemMouseover {
     fill: #0000ff;
 }
+
+.elemMouseout {
+    fill: #f06;
+}

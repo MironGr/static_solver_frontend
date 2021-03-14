@@ -2,7 +2,6 @@
     elemMouseover
 } from '../../../StyleConfig/geometryStyleConfig'
 
-import { getCxCyCircle} from '../../editing/supportForGeometry'
 
 export const highlightingElemOver = (classElem: string) => {
     let elemArr: any = document.querySelectorAll('.' + classElem)
@@ -10,7 +9,6 @@ export const highlightingElemOver = (classElem: string) => {
         let elem = elemArr[i]
         elem.addEventListener('mouseover', backlight.bind(null, elem, elemMouseover))
         elem.addEventListener('mouseout', deleteBacklight.bind(null, elem, elemMouseover))
-        //elem.addEventListener('click', getCxCyCircle.bind(null, elem))
     }
 }
 

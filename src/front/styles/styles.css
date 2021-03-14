@@ -4,6 +4,7 @@
 
 .elemMouseover {
     fill: #0000ff;
+    stroke: #0000ff;
 }
 
 .elemMouseout {

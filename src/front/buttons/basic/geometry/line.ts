@@ -6,7 +6,8 @@ import {
     linecap,
     circleEdgeClass,
     elemMouseover,
-    lineTempID
+    lineTempID,
+    lineClassCSS
 } from '../../../StyleConfig/geometryStyleConfig'
 import {
     linesObjName
@@ -91,6 +92,7 @@ const mousemoveLineSVG = (SVG, e) => {
     lineTemp.setAttributeNS(null, 'stroke-linecap', linecap)
     lineTemp.setAttributeNS(null, 'id', lineTempID)
 
+
     // добавление обработчика для создания 2й точки отрезка
     SVG.on('click', clickEndLineSVG.bind(null, SVG))
 
@@ -135,6 +137,7 @@ const clickEndLineSVG = (SVG, e) => {
     line.stroke({ color: colorLine, width: widthLine, linecap: linecap })
     // добавление id к линии
     line.id('line_' + lineID.toString())
+    line.attr('class', lineClassCSS)
     // создание концевых окружностей
     circleOnEdge(SVG)
 

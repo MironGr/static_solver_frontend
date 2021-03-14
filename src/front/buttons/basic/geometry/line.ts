@@ -5,7 +5,8 @@ import {
     widthLine,
     linecap,
     circleEdgeClass,
-    elemMouseover
+    elemMouseover,
+    lineTempID
 } from '../../../StyleConfig/geometryStyleConfig'
 import {
     linesObjName
@@ -21,7 +22,7 @@ import {
     highlightingElemOut,
     deleteClassFromAll
 } from './highlightingElements'
-//import { getCxCyCircle } from '../../editing/supportForGeometry'
+//import { removeTempObj } from '../../../keyboard/SVGcansel/SVGeventCancel'
 import { Element } from '@svgdotjs/svg.js'
 
 // вспомогательные переменные для реализации создания отрезка
@@ -88,15 +89,8 @@ const mousemoveLineSVG = (SVG, e) => {
     lineTemp.setAttributeNS(null, 'stroke', colorLine)
     lineTemp.setAttributeNS(null, 'stroke-width', widthLine/15)
     lineTemp.setAttributeNS(null, 'stroke-linecap', linecap)
+    lineTemp.setAttributeNS(null, 'id', lineTempID)
 
-    // прерывание команды при нажатии Esc
-    document.addEventListener('keydown', (event) => {
-        // удаление временной линии
-        if (event.keyCode == 27) { // event.code = event.key = Escape
-            console.log(`Нажата Esc`)
-            lineTemp.remove()
-        }
-    })
     // добавление обработчика для создания 2й точки отрезка
     SVG.on('click', clickEndLineSVG.bind(null, SVG))
 
